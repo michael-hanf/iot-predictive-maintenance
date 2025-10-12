@@ -15,11 +15,9 @@ def generate_training_data():
     # Generate 100 cycles für mehr Daten
     for cycle in range(100):
         scenario = np.random.choice([
-            'normal', 'normal', 'normal',  # 3x mehr normal
-            'gradual', 'temp_spike', 'vib_spike', 
-            'pressure_drop', 'multi', 'extreme'
+            'normal', 'normal', 'normal', 'normal',  # 4x
+            'gradual', 'temp_spike', 'extreme'  # 3x
         ])
-        
         if scenario == 'normal':
             # 150 readings normale Operation
             for i in range(150):
@@ -41,7 +39,7 @@ def generate_training_data():
                 pressure = 100 + np.random.normal(0, 3)
                 
                 data.append([temp, vibration, pressure])
-                labels.append(1 if progress > 0.7 else 0)
+                labels.append(1 if progress > 0.85 else 0) 
         
         elif scenario == 'temp_spike':
             # Plötzlicher Temperatur-Anstieg
