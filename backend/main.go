@@ -44,6 +44,7 @@ type MLResponse struct {
 
 // Global state
 var (
+	mqttClient   mqtt.Client
 	sensorBuffer []SensorData
 	bufferMutex  sync.RWMutex
 	wsClients    = make(map[*websocket.Conn]bool)
@@ -64,7 +65,7 @@ func main() {
 	opts.SetClientID("go-backend")
 	opts.SetDefaultPublishHandler(mqttMessageHandler)
 
-	mqttClient := mqtt.NewClient(opts)
+	mqttClient = mqtt.NewClient(opts)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatal("MQTT connection failed:", token.Error())
 	}
@@ -83,6 +84,7 @@ func main() {
 	// API endpoints
 	router.HandleFunc("/api/health", healthHandler).Methods("GET")
 	router.HandleFunc("/api/sensors/latest", getLatestDataHandler).Methods("GET")
+	router.HandleFunc("/api/control", controlHandler).Methods("POST")
 	router.HandleFunc("/ws", handleWebSocket)
 
 	// CORS
@@ -230,4 +232,35 @@ func broadcastToWebSockets(data SensorData) {
 			delete(wsClients, client)
 		}
 	}
+}
+
+// Add nach den anderen handlers (vor main())
+
+func controlHandler(w http.ResponseWriter, r *http.Request) {
+	var control map[string]interface{}
+
+	if mqttClient == nil || !mqttClient.IsConnectionOpen() {
+		http.Error(w, "mqtt unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&control); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Publish to MQTT control topic
+	topic := "control/machine_001"
+	payload, _ := json.Marshal(control)
+
+	// You need the MQTT client here - make it global
+	if token := mqttClient.Publish(topic, 0, false, payload); token.Wait() && token.Error() != nil {
+		http.Error(w, token.Error().Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("🎮 Control sent: %v", control)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
