@@ -66,9 +66,8 @@ function ControlPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white p-4">
+                <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">Simulator Control Panel</h1>
             <div className="flex items-center gap-2">
@@ -286,7 +285,6 @@ function ControlPanel() {
           )}
         </div>
       </div>
-    </div>
   );
 }
 
