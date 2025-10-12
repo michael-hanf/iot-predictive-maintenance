@@ -59,7 +59,7 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -150,6 +150,7 @@ function Dashboard() {
                   strokeWidth={2} 
                   dot={false}
                   name="Temperature (°C)"
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -169,6 +170,7 @@ function Dashboard() {
                   strokeWidth={2} 
                   dot={false}
                   name="Vibration (mm/s)"
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>

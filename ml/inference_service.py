@@ -6,7 +6,7 @@ import joblib
 import os
 
 app = Flask(__name__)
-CORS(app)  # Für React Dashboard
+CORS(app)
 
 # Load model and scaler
 model_path = os.path.join(os.path.dirname(__file__), 'models', 'predictive_model.h5')
@@ -15,7 +15,7 @@ scaler_path = os.path.join(os.path.dirname(__file__), 'models', 'scaler.pkl')
 model = keras.models.load_model(model_path)
 scaler = joblib.load(scaler_path)
 
-# Buffer für die letzten 50 readings
+# Buffer für RAW values (nicht scaled!)
 buffer = []
 
 @app.route('/health', methods=['GET'])
@@ -23,18 +23,18 @@ def health():
     return jsonify({'status': 'healthy', 'model_loaded': True})
 
 @app.route('/predict', methods=['POST'])
-def predict_old():
+def predict():
     data = request.json
     
-    # Add to buffer
+    # RAW values (BEFORE scaling)
     reading = [
         data['temperature'], 
         data['vibration'], 
         data['pressure']
     ]
-    buffer.append(reading)
     
-    # Keep only last 50
+    # Add RAW to buffer
+    buffer.append(reading)
     if len(buffer) > 50:
         buffer.pop(0)
     
@@ -47,57 +47,20 @@ def predict_old():
             'message': f'Collecting data... {len(buffer)}/50'
         })
     
-    # Scale and predict
-    scaled = scaler.transform(buffer)
-    X = np.array([scaled])
-    prediction = float(model.predict(X, verbose=0)[0][0])
-    
-    # Determine risk level
-    if prediction > 0.75:
-        risk = "critical"
-    elif prediction > 0.5:
-        risk = "warning"
-    else:
-        risk = "normal"
-    
-    return jsonify({
-        'prediction': prediction,
-        'risk_level': risk,
-        'buffer_size': len(buffer),
-        'confidence': prediction * 100
-    })
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    data = request.json
-    reading = [data['temperature'], data['vibration'], data['pressure']]
-    
-    buffer.append(reading)
-    if len(buffer) > 50:
-        buffer.pop(0)
-    
-    if len(buffer) < 50:
-        return jsonify({
-            'prediction': 0.0,
-            'risk_level': 'initializing',
-            'buffer_size': len(buffer),
-            'message': f'Collecting data... {len(buffer)}/50'
-        })
-    
-    # ML Prediction
+    # Scale for ML model
     scaled = scaler.transform(buffer)
     X = np.array([scaled])
     ml_prediction = float(model.predict(X, verbose=0)[0][0])
     
-    # ZUSÄTZLICH: Rule-based check für sudden spikes
-    latest = buffer[-1]
-    temp_critical = latest[0] > 85
-    vib_critical = latest[1] > 1.0
-    pressure_critical = latest[2] < 70 or latest[2] > 120
+    # Rule-based on RAW values (not scaled!)
+    latest_raw = buffer[-1]
+    temp_critical = latest_raw[0] > 85
+    vib_critical = latest_raw[1] > 1.0
+    pressure_critical = latest_raw[2] < 70 or latest_raw[2] > 120
     
     rule_based_risk = 0.9 if (temp_critical or vib_critical or pressure_critical) else 0.0
     
-    # Combine: Max von ML und Rules
+    # Combine: Max of ML and Rules
     final_prediction = max(ml_prediction, rule_based_risk)
     
     # Risk level
@@ -113,7 +76,8 @@ def predict():
         'ml_prediction': ml_prediction,
         'rule_based': rule_based_risk,
         'risk_level': risk,
-        'buffer_size': len(buffer)
+        'buffer_size': len(buffer),
+        'confidence': final_prediction * 100
     })
 
 @app.route('/reset', methods=['POST'])
