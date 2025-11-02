@@ -208,3 +208,6 @@ __marimo__/
 
 
 frontend/node_modules
+
+# Local tracking files (not for version control)
+TODO.md
