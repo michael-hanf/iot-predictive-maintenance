@@ -1,0 +1,108 @@
+version: '3.9'
+
+services:
+  # MQTT Broker - Message Bus
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: iot-mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-t", "test", "-C", "1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - iot-network
+
+  # ML Inference Service
+  ml-service:
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    container_name: iot-ml-service
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./ml/models:/app/models
+    environment:
+      - FLASK_ENV=production
+    # Commented out for initial startup - enable after service is ready
+    # healthcheck:
+    #   test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 300s
+    networks:
+      - iot-network
+
+  # Backend Service (Go)
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: iot-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mosquitto
+      - ml-service
+    environment:
+      - MQTT_BROKER=mosquitto:1883
+      - ML_SERVICE_URL=http://ml-service:5000
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - iot-network
+
+  # Sensor Simulator
+  simulator:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
+    container_name: iot-simulator
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MACHINE_ID=machine_001
+    networks:
+      - iot-network
+
+  # Frontend (React + Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: iot-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - iot-network
+
+volumes:
+  mosquitto-data:
+
+networks:
+  iot-network:
+    driver: bridge
