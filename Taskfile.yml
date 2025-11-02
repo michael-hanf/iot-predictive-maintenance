@@ -1,0 +1,59 @@
+version: '3'
+
+tasks:
+  help:
+    desc: Show all available tasks
+    cmds:
+      - task --list-all
+
+  setup:
+    desc: Setup all Python virtual environments
+    cmds:
+      - bash setup_venv.sh
+
+  list:
+    desc: List all Python virtual environments
+    cmds:
+      - bash list_venvs.sh
+
+  sim:install:
+    desc: Install simulator dependencies
+    cmds:
+      - python3 -m venv simulator/venv
+      - simulator/venv/bin/pip install --upgrade pip setuptools wheel
+      - simulator/venv/bin/pip install -r simulator/requirements.txt
+
+  sim:run:
+    desc: Run the sensor simulator
+    cmds:
+      - simulator/venv/bin/python simulator/sensor_simulator.py
+
+  ml:install:
+    desc: Install ML dependencies
+    cmds:
+      - python3 -m venv ml/venv
+      - ml/venv/bin/pip install --upgrade pip setuptools wheel
+      - ml/venv/bin/pip install -r ml/requirements.txt
+
+  ml:train:
+    desc: Train the ML model
+    cmds:
+      - ml/venv/bin/python ml/train_model.py
+
+  ml:test:
+    desc: Test the ML model
+    cmds:
+      - ml/venv/bin/python ml/test_model.py
+
+  ml:inference:
+    desc: Run inference service
+    cmds:
+      - ml/venv/bin/python ml/inference_service.py
+
+  clean:
+    desc: Remove all virtual environments and cache
+    cmds:
+      - rm -rf simulator/venv ml/venv
+      - find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+      - find . -type f -name "*.pyc" -delete
+      - echo "Cleaned up virtual environments and caches"

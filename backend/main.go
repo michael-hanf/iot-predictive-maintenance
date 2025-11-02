@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -51,8 +52,16 @@ var (
 	wsUpgrader   = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
-	mlServiceURL = "http://localhost:5000/predict"
+	mlServiceURL string
 )
+
+func init() {
+	// Get ML Service URL from environment or use default
+	mlServiceURL = os.Getenv("ML_SERVICE_URL")
+	if mlServiceURL == "" {
+		mlServiceURL = "http://localhost:5000/predict"
+	}
+}
 
 func main() {
 	fmt.Println("===========================================")
@@ -61,7 +70,14 @@ func main() {
 
 	// Connect to MQTT
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker("tcp://localhost:1883")
+
+	// Get MQTT broker from environment or use default
+	mqttBroker := os.Getenv("MQTT_BROKER")
+	if mqttBroker == "" {
+		mqttBroker = "localhost:1883"
+	}
+
+	opts.AddBroker("tcp://" + mqttBroker)
 	opts.SetClientID("go-backend")
 	opts.SetDefaultPublishHandler(mqttMessageHandler)
 
