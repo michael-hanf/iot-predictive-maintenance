@@ -1,8 +1,6 @@
 # IoT Predictive Maintenance Platform
 
-Real-time equipment monitoring with ML-based failure prediction — combining Go, Python, and React in a fully containerized stack.
-
-A sensor simulator generates realistic machine telemetry (temperature, vibration, pressure) with progressive degradation. An LSTM model predicts failures 10 readings in advance. Operators see live charts and can trigger failure scenarios manually.
+IoT Predictive Maintenance is a real-time platform that keeps industrial machines healthy by streaming sensor data, running on-the-fly ML risk scoring, and alerting teams before failures hit production. A lightweight Go backend ingests MQTT telemetry, fans out live updates over WebSockets, and calls a Python inference service trained on vibration, temperature, and pressure profiles. A React dashboard visualizes trends, flags anomalies, and lets operators tweak control signals that feed back to devices through MQTT. Everything runs locally with Docker — simulator, ML service, broker, and UI — so you can prototype fast, validate models against live-like data, and ship safer, more resilient operations.
 
 ## Architecture
 
