@@ -20,35 +20,19 @@ The system monitors industrial equipment through continuous sensor monitoring (t
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FRONTEND (React 19.2.0)                      │
-│  Dashboard + Control Panel (Tailwind CSS + Recharts Charts)     │
-│         WebSocket (ws://localhost:8080/ws)                      │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────────┐
-│                    BACKEND (Go 1.x)                             │
-│  HTTP API (port 8080) + WebSocket Server                        │
-│  - MQTT Subscriber (sensors/+/data)                             │
-│  - ML Service Caller (http://localhost:5000/predict)            │
-│  - WebSocket Broadcaster                                        │
-└──────────┬───────────────────────────────────┬──────────────────┘
-           │                                   │
-      ┌────▼─────┐                    ┌────────▼──────────┐
-      │   MQTT   │                    │  ML Inference     │
-      │  Broker  │                    │   (Flask 3.0)     │
-      │  (1883)  │                    │  (port 5000)      │
-      └────▲─────┘                    │  - LSTM Model     │
-           │                          │  - Scaler/Buffer  │
-      ┌────┴──────────┐               └───────────────────┘
-      │   Simulator   │
-      │   (Python)    │
-      │ - Machine     │
-      │   Degradation │
-      │ - Sensor Gen  │
-      │ - Control Sub │
-      └───────────────┘
+```mermaid
+graph TB
+    Frontend["📊 FRONTEND (React 19.2.0)\nDashboard + Control Panel\nTailwind CSS + Recharts\nWebSocket ws://localhost:8080/ws"]
+    Backend["⚙️ BACKEND (Go 1.x)\nHTTP API :8080 + WebSocket\nMQTT Subscriber sensors/+/data\nML Service Caller :5000/predict"]
+    Broker["📡 MQTT Broker\n(Mosquitto :1883)"]
+    ML["🧠 ML Inference (Flask 3.0)\n:5000\nLSTM Model + Scaler/Buffer"]
+    Sim["🏭 Simulator (Python)\nMachine Degradation\nSensor Generation\nControl Subscriber"]
+
+    Frontend <-->|WebSocket| Backend
+    Backend <-->|MQTT subscribe/publish| Broker
+    Backend -->|POST /predict| ML
+    ML -->|risk score| Backend
+    Broker <-->|MQTT publish/subscribe| Sim
 ```
 
 ---
@@ -332,28 +316,22 @@ type MLResponse struct {
 
 ## Data Flow
 
-```
-1. SENSOR SIMULATOR (Python)
-   ↓ (MQTT publish: sensors/machine_001/data)
-   ↓
-2. MQTT BROKER (localhost:1883)
-   ↓ (MQTT subscribe)
-   ↓
-3. GO BACKEND (port 8080)
-   ├→ getMLPrediction() ──→ PYTHON ML SERVICE (port 5000)
-   │                           ↓
-   │                        LSTM Inference
-   │                           ↓
-   │                        Return risk_level
-   │
-   ├→ Store in buffer (max 100)
-   │
-   └→ Broadcast via WebSocket
-       ↓
-4. REACT FRONTEND (browser)
-   ├→ Update charts
-   ├→ Update metric cards
-   └→ Display alerts if critical
+```mermaid
+sequenceDiagram
+    participant Sim as Sensor Simulator (Python)
+    participant Broker as MQTT Broker (:1883)
+    participant Backend as Go Backend (:8080)
+    participant ML as ML Service (:5000)
+    participant FE as React Frontend
+
+    Sim->>Broker: MQTT publish sensors/machine_001/data
+    Broker->>Backend: MQTT subscribe → sensor reading
+    Backend->>ML: POST /predict (temperature, vibration, pressure)
+    ML->>ML: LSTM inference (50-reading buffer)
+    ML-->>Backend: risk_level, prediction score
+    Backend->>Backend: Store in buffer (max 100)
+    Backend->>FE: WebSocket broadcast (sensor + ML result)
+    FE->>FE: Update charts, metric cards, alerts
 ```
 
 ---
