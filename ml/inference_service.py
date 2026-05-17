@@ -17,8 +17,8 @@ scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
 
 # GitHub release URLs (adjust to your repo)
 GITHUB_RELEASE_URL = 'https://github.com/michael-hanf/iot-predictive-maintenance/releases/download'
-MODEL_DOWNLOAD_URL = f'{GITHUB_RELEASE_URL}/v1.0.0/predictive_model.h5'
-SCALER_DOWNLOAD_URL = f'{GITHUB_RELEASE_URL}/v1.0.0/scaler.pkl'
+MODEL_DOWNLOAD_URL = f'{GITHUB_RELEASE_URL}/v0.1.0/predictive_model.h5'
+SCALER_DOWNLOAD_URL = f'{GITHUB_RELEASE_URL}/v0.1.0/scaler.pkl'
 
 def ensure_model_directory():
     """Create models directory if it doesn't exist"""
