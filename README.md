@@ -47,7 +47,7 @@ open http://localhost:3000
 
 The simulator starts automatically. The ML service needs ~50 sensor readings to fill its buffer before predictions appear — this takes about 2 minutes.
 
-> **Note:** The trained ML model (~1.6MB) is distributed via GitHub Releases, not included in the image. The container downloads it on first startup. See [GITHUB-RELEASE.md](GITHUB-RELEASE.md) for model versioning.
+> **Note:** The trained ML model (~1.6MB) is included in the repository and mounted into the container via `docker-compose.yml`. The GitHub Release also contains the model files as a download fallback — see [GITHUB-RELEASE.md](GITHUB-RELEASE.md) for model versioning.
 
 ## Manual control
 
@@ -72,6 +72,12 @@ LSTM(128) → Dropout(0.3) → LSTM(64) → Dropout(0.3) → LSTM(32) → Dropou
 
 Input: 50-timestep sequences × 3 features (temperature, vibration, pressure), MinMax-scaled.  
 Output: Failure probability within next 10 readings.
+
+## Known Limitations
+
+- **AVX CPU instructions required:** TensorFlow (used by the ML inference service) requires AVX-capable hardware. The `ml-service` container will crash with `Illegal instruction (Exit 132)` on CPUs without AVX support — this includes most VirtualBox VMs. All other services (broker, backend, simulator, frontend) run fine; only ML predictions will be unavailable. On native hardware, WSL2, or cloud VMs with AVX support this is not an issue.
+
+- **ML predictions need ~2 minutes to appear:** The LSTM buffer requires 50 sensor readings before the first prediction is computed.
 
 ## Further reading
 
