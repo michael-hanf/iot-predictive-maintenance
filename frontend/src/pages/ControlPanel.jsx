@@ -59,7 +59,7 @@ function ControlPanel() {
     },
     failure: () => {
       setTemperature(98);
-      setPressure(120);
+      setPressure(125);
       setVibration(1.5);
       setAutoMode(false);
     }

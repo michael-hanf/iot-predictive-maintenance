@@ -41,8 +41,10 @@ graph TB
 # Start all services
 docker compose up -d
 
-# Open dashboard
-open http://localhost:3000
+# Open dashboard (or open http://localhost:3000 in any browser)
+start http://localhost:3000          # Windows (cmd / PowerShell)
+explorer.exe http://localhost:3000   # WSL2
+xdg-open http://localhost:3000       # Linux
 ```
 
 The simulator starts automatically. The ML service needs ~50 sensor readings to fill its buffer before predictions appear — this takes about 2 minutes.
@@ -58,13 +60,13 @@ The dashboard includes a control panel to simulate failure scenarios without wai
 | Normal | 70°C | 0.5 mm/s | 100 PSI |
 | Warning | 82°C | 0.85 mm/s | 105 PSI |
 | Critical | 92°C | 1.2 mm/s | 115 PSI |
-| Failure | 98°C | 1.5 mm/s | 120 PSI |
+| Failure | 98°C | 1.5 mm/s | 125 PSI |
 
 Sensors can also be controlled individually via sliders.
 
 ## ML model
 
-3-layer LSTM trained on 100 synthetic degradation cycles with 7 failure scenarios (gradual degradation, temperature spikes, vibration spikes, pressure drops, multi-failure).
+3-layer LSTM trained on 100 synthetic cycles, each randomly drawn from four scenarios: normal operation (weighted 4×), gradual degradation, temperature spikes and extreme hardware failure (temperature and vibration rising together).
 
 ```
 LSTM(128) → Dropout(0.3) → LSTM(64) → Dropout(0.3) → LSTM(32) → Dropout(0.2) → Dense(16) → Dense(1, sigmoid)
